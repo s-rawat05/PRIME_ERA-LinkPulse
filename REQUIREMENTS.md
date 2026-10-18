@@ -57,7 +57,7 @@ Verification legend: **T** = automated test (file › test name) · **M** = veri
 | 4.7 | Device / OS / country targeting rules by priority | PS p1, PPT s7 | ✅ | T `engine.test` › 8.; `redirect.test` › targeting rules route mobile visitors; M rules editor UI |
 | 4.8 | Cache with invalidation; takedown blocks the very next request | PPT s6, s9 | ✅ | T `redirect.test` › takedown: a cached link is blocked…; M curl: 3 cached hits → admin disable → next hit `410` |
 | 4.9 | Safe fallback without Redis | prompt | ✅ | C `lib/cache.ts` (production default `none`, Redis errors fall back to DB); M `/api/health` in production mode reports `cache: none` |
-| 4.10 | Redirect latency recorded; p95 shown | PPT s3, s9 | ✅ | T `analytics.test` › summary… (p95 non-null); M production: server-side p50 11.6 ms / p95 24.8 ms without Redis |
+| 4.10 | Redirect latency recorded; p95 shown | PPT s3, s9 | ✅ | T `analytics.test` › summary… (p95 non-null); M production (no Redis): one warm link p50 11.6 ms / p95 24.8 ms; platform-wide p95 ≈ 160 ms including cold starts |
 
 ## 5. Click tracking & analytics
 

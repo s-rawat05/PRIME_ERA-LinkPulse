@@ -9,9 +9,34 @@ Built by **Team PRIME ERA** (GEHU Bhimtal) for Round 2 of the LinkPulse hackatho
 out of the repository in the git-ignored `.secrets/` folder of the deploying machine.
 Requirement-by-requirement status lives in [REQUIREMENTS.md](REQUIREMENTS.md).
 
+![LinkPulse landing page](docs/screenshots/01-landing.png)
+
 ---
 
-## What works today
+## Problem statement
+
+Most URL shorteners only map a short code to a long URL. Marketing and operations teams need much more from a single
+link: it may belong to a campaign, expire next month, send mobile users somewhere else, require a password, and need to be
+disabled at once if it turns out to be malicious. Every visit has to be recorded without slowing the redirect, bots and
+link previews must not inflate the numbers, and the dashboard has to turn raw clicks into decisions. Expired and disabled
+links must stay traceable in reports.
+
+## Our solution
+
+LinkPulse makes the **link record the hub** that campaigns, redirect rules, click events, QR codes and governance attach to:
+
+- A **rule engine** evaluates every visit in a fixed order (safety → paused → expiry → password → bot → click cap →
+  targeting → `302`), so the visitor always gets the right outcome and wrong passwords or bots never use up clicks.
+- The **click cap is one atomic SQL `UPDATE`**, so 50 simultaneous visitors on a cap of 10 get exactly 10 redirects.
+- **Every visit is stored with its outcome** (redirected, expired, disabled, bot, …) after the response is sent, so
+  analytics are complete without adding latency, and blocked traffic stays reportable.
+- **Admins take a link down in one request** (database update + cache invalidation), so the very next visit is blocked.
+- Problems such as **duplicate aliases, unsafe URLs and blocked domains are caught before publishing** — in the wizard
+  and row by row in CSV imports.
+
+---
+
+## Features
 
 | Area | Implemented |
 |---|---|
@@ -26,6 +51,23 @@ Requirement-by-requirement status lives in [REQUIREMENTS.md](REQUIREMENTS.md).
 | Governance | Admin dashboard, platform-wide analytics, link takedown/restore with immediate cache invalidation, domain blocklist (subdomains included), user roles/disable, audit log, basic abuse signals |
 | Rule simulator | Same engine as live redirects; what-if overrides for status, time and click count; never writes analytics |
 | Security | DB-backed revocable sessions (HttpOnly, SameSite=Lax), server-side role + ownership checks everywhere, Origin check on mutations, Zod validation, rate limits (link creation, password attempts, login, sign-up, import), SSRF/open-redirect-safe URL validation, security headers, secrets redacted from audit log |
+
+## Screenshots
+
+| Dashboard overview (live data) | Link analytics |
+|---|---|
+| ![Dashboard overview](docs/screenshots/02-dashboard-overview.png) | ![Link analytics](docs/screenshots/04-link-analytics.png) |
+| **Creation wizard: live alias check** | **Bulk import: row-level validation** |
+| ![Create link wizard](docs/screenshots/03-create-link-alias-taken.png) | ![Bulk import report](docs/screenshots/06-bulk-import-report.png) |
+| **Rule simulator (same engine as live redirects)** | **Admin platform view** |
+| ![Rule simulator](docs/screenshots/07-rule-simulator.png) | ![Admin platform](docs/screenshots/10-admin-platform.png) |
+| **Campaigns** | **Password-protected link (visitor view)** |
+| ![Campaigns](docs/screenshots/05-campaigns.png) | ![Password page](docs/screenshots/08-password-protected-link.png) |
+| **Admin takedowns** | **Mobile** |
+| ![Admin takedowns](docs/screenshots/11-admin-takedowns.png) | <img src="docs/screenshots/09-mobile-landing.png" alt="Mobile landing" width="260"> |
+
+Screenshots were captured from the live deployment on 18 Oct 2026. Dashboard numbers include clearly labelled
+synthetic demo data from `npm run db:seed`.
 
 ## Architecture
 
@@ -58,7 +100,9 @@ database constraints.
 **Privacy**: raw IP addresses are never stored. Unique visitors = `SHA-256(HMAC(AUTH_SECRET, UTC date) | link | IP | UA)`,
 so hashes cannot be linked across days ("daily uniques"). Rate-limit keys use an HMAC of the IP.
 
-### Stack and deliberate deviations from the Round 1 deck
+## Tech stack
+
+Deliberate deviations from the Round 1 deck are listed in the table below.
 
 Next.js 16 (App Router, Route Handlers) · React 19 · TypeScript · Tailwind CSS 4 · Recharts · Lucide · Motion (the
 current name of Framer Motion) · Zod · Drizzle ORM · PostgreSQL (Neon) · Upstash Redis + Ratelimit · isbot ·
@@ -170,14 +214,19 @@ scripts/                       migrate, seed, create-admin;  tests/  Vitest suit
 ## Known limitations
 
 - Country/city are recorded only when the host supplies geo headers (Vercel/Cloudflare); locally they are empty.
-- The live site runs without Upstash Redis, so each redirect reads Neon (server-side p95 ≈ 25 ms measured). Adding
-  Upstash enables the shared link cache.
+- The live site runs without Upstash Redis, so each redirect reads Neon. Measured server-side on 18 Oct 2026: p50 ≈ 12 ms
+  on warm instances, but platform-wide p95 ≈ 160 ms because serverless cold starts include opening the Neon connection.
+  Adding Upstash Redis (link cache) is the main lever for lowering p95.
 - Click events are written in `after()`. On Vercel this is backed by `waitUntil`; on other hosts a crash between the
   response and the insert could lose that one event (the redirect itself and cap enforcement are unaffected).
 - Dashboards query raw events (indexed) for exact totals; `link_stats_daily` rollups exist and are verified against
   raw counts but are not yet used to serve very large date ranges.
 - Workspaces are personal (one per user); team roles, custom domains, a public API and link-in-bio pages are roadmap.
 - The k6 script is provided but was not executed in this environment (k6 not installed).
+
+## Team PRIME ERA — GEHU Bhimtal
+
+Sahil Rawat · Piyush Negi · Ayush Mahara · Udit Joshi · Akshay Srivastav
 
 ## Roadmap
 
