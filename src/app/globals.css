@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-ink: #0b1630;
+  --color-ink-soft: #45526e;
+  --color-ink-faint: #7b88a3;
+  --color-line: #e3e9f5;
+  --color-canvas: #f4f7fd;
+
+  --color-pulse-50: #eef5ff;
+  --color-pulse-100: #dbe9ff;
+  --color-pulse-200: #bdd6ff;
+  --color-pulse-300: #8fbaff;
+  --color-pulse-400: #5b97ff;
+  --color-pulse-500: #3478f6;
+  --color-pulse-600: #1f5fe8;
+  --color-pulse-700: #1a4cc4;
+  --color-pulse-800: #1b3f9a;
+  --color-pulse-900: #142d6b;
+
+  --radius-xl2: 1.25rem;
+  --radius-xl3: 1.75rem;
+
+  --shadow-glass: 0 1px 0 0 rgb(255 255 255 / 0.55) inset, 0 24px 60px -24px rgb(20 45 107 / 0.35);
+  --shadow-card: 0 1px 2px rgb(16 32 72 / 0.04), 0 12px 32px -16px rgb(16 32 72 / 0.14);
+  --shadow-lift: 0 2px 4px rgb(16 32 72 / 0.05), 0 22px 48px -20px rgb(31 95 232 / 0.35);
+
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-float-slow: float 11s ease-in-out infinite;
+  --animate-pulse-dot: pulse-dot 2s ease-in-out infinite;
+  --animate-twinkle: twinkle 4s ease-in-out infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(0, -12px, 0); }
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.8); }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translate3d(0, 18px, 0); }
+    to { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.25; }
+    50% { opacity: 0.9; }
+  }
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* Electric-blue hero field with an icy fade toward the bottom. */
+.hero-field {
+  background:
+    radial-gradient(900px 520px at 50% -8%, rgb(140 190 255 / 0.85), transparent 62%),
+    radial-gradient(700px 500px at 12% 38%, rgb(70 140 255 / 0.55), transparent 60%),
+    radial-gradient(700px 500px at 92% 30%, rgb(60 120 255 / 0.5), transparent 60%),
+    linear-gradient(180deg, #2f6df5 0%, #2563eb 34%, #3b82f6 58%, #9cc3ff 82%, #e6f0ff 100%);
+}
+
+/* CSS-only entrance for above-the-fold content: visible without JavaScript. */
+.rise {
+  animation: rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.glass {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.32), rgb(255 255 255 / 0.14));
+  border: 1px solid rgb(255 255 255 / 0.42);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: var(--shadow-glass);
+}
+
+.glass-light {
+  background: rgb(255 255 255 / 0.78);
+  border: 1px solid rgb(255 255 255 / 0.9);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  box-shadow: var(--shadow-glass);
+}
+
+/* Grid items default to min-width:auto, which lets wide tables/charts push the page sideways. */
+.grid > * {
+  min-width: 0;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.grid-dots {
+  background-image: radial-gradient(rgb(31 95 232 / 0.12) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-pulse-500);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
