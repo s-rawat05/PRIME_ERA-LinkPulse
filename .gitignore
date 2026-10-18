@@ -46,3 +46,8 @@ next-env.d.ts
 
 # local-only credentials for the deployed demo
 /.secrets/
+
+# Agent skill files added by the Neon marketplace integration (not part of the app)
+/.agents/
+/.claude/skills/
+/skills-lock.json
