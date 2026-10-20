@@ -217,7 +217,12 @@ export async function getLinkForUser(db: Db, user: SessionUser, id: string, opts
   return l;
 }
 
-const updateSchema = linkInputSchema.partial().extend({ clearPassword: z.boolean().optional() });
+const updateSchema = linkInputSchema
+  .extend({
+    tagIds: z.array(z.uuid()).max(20).optional(),
+    clearPassword: z.boolean().optional(),
+  })
+  .partial();
 
 export async function updateLink(db: Db, user: SessionUser, id: string, raw: unknown) {
   const existing = await getLinkForUser(db, user, id);
@@ -260,7 +265,7 @@ export async function updateLink(db: Db, user: SessionUser, id: string, raw: unk
 
   const updated = await db.transaction(async (tx) => {
     const [u] = await tx.update(links).set(values).where(eq(links.id, id)).returning();
-    if (patch.tagIds) {
+    if (patch.tagIds !== undefined) {
       await tx.delete(linkTags).where(eq(linkTags.linkId, id));
       if (n.tagIds.length) await tx.insert(linkTags).values(n.tagIds.map((tagId) => ({ linkId: id, tagId })));
     }

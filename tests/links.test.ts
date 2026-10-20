@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
-import { links } from "@/db/schema";
+import { links, linkTags } from "@/db/schema";
 import { addBlockedDomain } from "@/lib/admin/service";
 import type { SessionUser } from "@/lib/auth/users";
 import { generateShortCode, validateAliasFormat } from "@/lib/links/codes";
@@ -125,5 +125,27 @@ describe("ownership", () => {
   it("admins can inspect any link", async () => {
     const { link } = await createLink(await db(), alice, { destinationUrl: "https://example.com" });
     await expect(getLinkForUser(await db(), admin, link.id, { allowAdmin: true })).resolves.toMatchObject({ id: link.id });
+  });
+
+  it("partial update preserves existing tags unless tagIds is explicitly supplied", async () => {
+    const t1 = await createTag(await db(), alice, { name: "newsletter" });
+    const t2 = await createTag(await db(), alice, { name: "promo" });
+    const { link } = await createLink(await db(), alice, {
+      destinationUrl: "https://example.com/tagged",
+      title: "Initial Title",
+      tagIds: [t1.id, t2.id],
+    });
+
+    // Update only title - tagIds omitted
+    await updateLink(await db(), alice, link.id, { title: "Updated Title" });
+
+    const d = await db();
+    const tagsAfterPartial = await d.select().from(linkTags).where(eq(linkTags.linkId, link.id));
+    expect(tagsAfterPartial.map((t) => t.tagId).sort()).toEqual([t1.id, t2.id].sort());
+
+    // Explicitly clearing tags with empty array
+    await updateLink(d, alice, link.id, { tagIds: [] });
+    const tagsAfterClear = await d.select().from(linkTags).where(eq(linkTags.linkId, link.id));
+    expect(tagsAfterClear).toHaveLength(0);
   });
 });
