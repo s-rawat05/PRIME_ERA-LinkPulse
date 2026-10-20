@@ -6,7 +6,7 @@ import type { SessionUser } from "@/lib/auth/users";
 import { generateShortCode, validateAliasFormat } from "@/lib/links/codes";
 import { createLink, deleteLink, getLinkForUser, updateLink, validateLinkInput } from "@/lib/links/service";
 import { validateDestination } from "@/lib/links/url";
-import { createCampaign, createTag } from "@/lib/org/service";
+import { createCampaign, createTag, listTags } from "@/lib/org/service";
 import { db, makeUser } from "./helpers";
 
 let alice: SessionUser;
@@ -147,5 +147,23 @@ describe("ownership", () => {
     await updateLink(d, alice, link.id, { tagIds: [] });
     const tagsAfterClear = await d.select().from(linkTags).where(eq(linkTags.linkId, link.id));
     expect(tagsAfterClear).toHaveLength(0);
+  });
+
+  it("listTags excludes soft-deleted links from link count", async () => {
+    const t = await createTag(await db(), alice, { name: "analytics-track" });
+    const { link } = await createLink(await db(), alice, {
+      destinationUrl: "https://example.com/to-delete",
+      tagIds: [t.id],
+    });
+
+    const tagsBeforeDelete = await listTags(await db(), alice.id);
+    const tagBefore = tagsBeforeDelete.find((x) => x.id === t.id);
+    expect(tagBefore?.link_count).toBe(1);
+
+    await deleteLink(await db(), alice, link.id);
+
+    const tagsAfterDelete = await listTags(await db(), alice.id);
+    const tagAfter = tagsAfterDelete.find((x) => x.id === t.id);
+    expect(tagAfter?.link_count).toBe(0);
   });
 });

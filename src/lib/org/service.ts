@@ -143,8 +143,10 @@ export async function deleteTag(db: Db, user: SessionUser, id: string) {
 
 export async function listTags(db: Db, ownerId: string) {
   const res = await db.execute<{ id: string; name: string; color: string; link_count: number }>(sql`
-    SELECT t.id, t.name, t.color, count(lt.link_id)::int AS link_count
-    FROM tags t LEFT JOIN link_tags lt ON lt.tag_id = t.id
+    SELECT t.id, t.name, t.color, count(l.id)::int AS link_count
+    FROM tags t
+    LEFT JOIN link_tags lt ON lt.tag_id = t.id
+    LEFT JOIN links l ON l.id = lt.link_id AND l.deleted_at IS NULL
     WHERE t.owner_id = ${ownerId} GROUP BY t.id ORDER BY t.name`);
   return res.rows;
 }
