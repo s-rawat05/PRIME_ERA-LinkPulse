@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: lp
+          POSTGRES_PASSWORD: lp_ci_only
+          POSTGRES_DB: linkpulse_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U lp" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - name: Unit + integration tests (PGlite, one isolated database per file)
+        run: npm test
+      - name: Rule-order and real-concurrency tests (PostgreSQL 17)
+        run: npx vitest run tests/engine.test.ts tests/redirect.test.ts tests/links.test.ts tests/concurrency-pg.test.ts
+        env:
+          TEST_DATABASE_URL: postgres://lp:lp_ci_only@localhost:5432/linkpulse_test
+          DATABASE_POOL_MAX: "20"
+      - name: Production build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_BASE_URL: https://linkpulse.example.com

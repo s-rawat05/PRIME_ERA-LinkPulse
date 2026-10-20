@@ -1,0 +1,12 @@
+# Never upload local databases or secrets
+.data
+.env*
+!.env.example
+# Files added by the Neon marketplace integration (not used by the app)
+.agents
+.claude
+skills-lock.json
+# Not needed to build or run
+coverage
+.next
+.secrets
