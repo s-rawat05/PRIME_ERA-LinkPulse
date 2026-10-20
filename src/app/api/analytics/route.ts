@@ -18,7 +18,7 @@ export const GET = api(async (req) => {
   if (linkId) scope.linkId = (await getLinkForUser(db, user, linkId, { allowAdmin: true })).id;
   const campaignId = p.get("campaign");
   if (campaignId) scope.campaignId = (await getCampaign(db, user, campaignId)).id;
-  if (scope.linkId && user.role === "admin") delete scope.ownerId;
+  if ((scope.linkId || scope.campaignId) && user.role === "admin") delete scope.ownerId;
 
   const [summary, series, referrers, devices, browsers, recent] = await Promise.all([
     getSummary(db, scope, range),

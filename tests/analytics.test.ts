@@ -79,6 +79,13 @@ describe("analytics aggregation", () => {
     expect(c).toMatchObject({ name: "Diwali Sale", link_count: 1, clicks: 2, qr_clicks: 1, top_code: codeA });
   });
 
+  it("campaign analytics scoped by campaignId aggregates events without requiring ownerId match", async () => {
+    const [c] = await listCampaigns(await db(), a.id);
+    const s = await getSummary(await db(), { campaignId: c.id }, parseRange({ range: "7d" }));
+    expect(s.clicks).toBe(2);
+    expect(s.qr).toBe(1);
+  });
+
   it("daily rollups match raw counts", async () => {
     await rollupDaily(await db(), 2);
     const r = await rollupConsistency(await db(), 2);
