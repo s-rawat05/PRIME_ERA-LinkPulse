@@ -58,6 +58,9 @@ export async function updateCampaign(db: Db, user: SessionUser, id: string, raw:
   const c = await getCampaign(db, user, id);
   if (c.ownerId !== user.id) throw notFound("Campaign");
   const v = campaignSchema.partial().parse(raw);
+  const startsAt = v.startsAt !== undefined ? v.startsAt : c.startsAt;
+  const endsAt = v.endsAt !== undefined ? v.endsAt : c.endsAt;
+  if (startsAt && endsAt && endsAt <= startsAt) throw badRequest("End date must be after the start date.", { endsAt: "Must be after start" });
   try {
     const [u] = await db.update(campaigns).set({ ...v, updatedAt: new Date() }).where(eq(campaigns.id, id)).returning();
     await audit(db, { actorId: user.id, action: "campaign.update", targetType: "campaign", targetId: id, before: { name: c.name }, after: { name: u.name } });

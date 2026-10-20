@@ -111,4 +111,39 @@ describe("campaign ownership", () => {
     await expect(createCampaign(await db(), a, { name: "Diwali Sale" })).rejects.toMatchObject({ status: 409 });
     await expect(createCampaign(await db(), b, { name: "Diwali Sale" })).resolves.toBeTruthy();
   });
+
+  it("enforces startsAt < endsAt on updates", async () => {
+    const c = await createCampaign(await db(), a, {
+      name: "Dated Campaign",
+      startsAt: "2026-05-01T00:00:00Z",
+      endsAt: "2026-05-10T00:00:00Z",
+    });
+
+    // Updating startsAt past existing endsAt
+    await expect(updateCampaign(await db(), a, c.id, { startsAt: "2026-05-15T00:00:00Z" })).rejects.toMatchObject({
+      status: 400,
+      fields: { endsAt: "Must be after start" },
+    });
+
+    // Updating endsAt before existing startsAt
+    await expect(updateCampaign(await db(), a, c.id, { endsAt: "2026-04-20T00:00:00Z" })).rejects.toMatchObject({
+      status: 400,
+      fields: { endsAt: "Must be after start" },
+    });
+
+    // Updating both with inverted dates
+    await expect(
+      updateCampaign(await db(), a, c.id, {
+        startsAt: "2026-06-10T00:00:00Z",
+        endsAt: "2026-06-01T00:00:00Z",
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      fields: { endsAt: "Must be after start" },
+    });
+
+    // Valid update
+    const updated = await updateCampaign(await db(), a, c.id, { startsAt: "2026-05-05T00:00:00Z" });
+    expect(updated.startsAt?.toISOString()).toBe(new Date("2026-05-05T00:00:00Z").toISOString());
+  });
 });
